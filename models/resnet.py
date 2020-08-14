@@ -1,7 +1,7 @@
 import torch.nn as nn
 import math
 # import torch.utils.model_zoo as model_zoo
-from .eca_module import eca_layer
+from .eca_module import *
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -20,7 +20,6 @@ class ECABasicBlock(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes, 1)
         self.bn2 = nn.BatchNorm2d(planes)
-        # self.eca = eca_layer(planes, k_size)
         self.downsample = downsample
         self.stride = stride
 
@@ -56,7 +55,7 @@ class ECABottleneck(nn.Module):
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
         self.relu = nn.ReLU(inplace=True)
-        # self.eca = eca_layer(planes * 4, k_size)
+        # self.eca = layer(planes * 4, k_size)
         self.downsample = downsample
         self.stride = stride
 
@@ -144,7 +143,7 @@ class ResNet(nn.Module):
         return x
 
 
-def eca_resnet18(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
+def resnet18(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
     """Constructs a ResNet-18 model.
 
     Args:
@@ -157,7 +156,7 @@ def eca_resnet18(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
     return model
 
 
-def eca_resnet34(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
+def resnet34(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
     """Constructs a ResNet-34 model.
 
     Args:
@@ -170,7 +169,7 @@ def eca_resnet34(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
     return model
 
 
-def eca_resnet50(k_size=[3, 3, 3, 3], num_classes=1000, pretrained=False):
+def resnet50(k_size=[3, 3, 3, 3], num_classes=1000, pretrained=False):
     """Constructs a ResNet-50 model.
 
     Args:
@@ -178,13 +177,13 @@ def eca_resnet50(k_size=[3, 3, 3, 3], num_classes=1000, pretrained=False):
         num_classes:The classes of classification
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    print("Constructing eca_resnet50......")
+    print("Constructing resnet50......")
     model = ResNet(ECABottleneck, [3, 4, 6, 3], num_classes=num_classes, k_size=k_size)
     model.avgpool = nn.AdaptiveAvgPool2d(1)
     return model
 
 
-def eca_resnet101(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
+def resnet101(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
     """Constructs a ResNet-101 model.
 
     Args:
@@ -197,7 +196,7 @@ def eca_resnet101(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
     return model
 
 
-def eca_resnet152(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
+def resnet152(k_size=[3, 3, 3, 3], num_classes=1_000, pretrained=False):
     """Constructs a ResNet-152 model.
 
     Args:

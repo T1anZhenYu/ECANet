@@ -1,3 +1,4 @@
+
 '''
 Training script for CIFAR-10/100
 Copyright (c) Wei YANG, 2017
@@ -26,8 +27,8 @@ from models.layers import *
 import gc
 
 model_names = sorted(name for name in models.__dict__
-                     if not name.startswith("__")
-                     and callable(models.__dict__[name]))
+    if not name.startswith("__")
+    and callable(models.__dict__[name]))
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Training')
 # Datasets
@@ -58,8 +59,8 @@ parser.add_argument('--resume', default='', type=str, metavar='PATH',
 parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet20',
                     choices=model_names,
                     help='model architecture: ' +
-                         ' | '.join(model_names) +
-                         ' (default: resnet18)')
+                        ' | '.join(model_names) +
+                        ' (default: resnet18)')
 parser.add_argument('--depth', type=int, default=29, help='Model depth.')
 parser.add_argument('--block-name', type=str, default='BasicBlock',
                     help='the building block for Resnet and Preresnet: BasicBlock, Bottleneck (default: Basicblock for cifar10/cifar100)')
@@ -71,11 +72,10 @@ parser.add_argument('--compressionRate', type=int, default=2, help='Compression 
 parser.add_argument('--manualSeed', type=int, help='manual seed')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
                     help='evaluate model on validation set')
-# Device options
+#Device options
 parser.add_argument('--gpu_id', default='0', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
-parser.add_argument('--NewBN', dest='NewBNe', action='store_true',
-                    help='use NewBN')
+
 args = parser.parse_args()
 state = {k: v for k, v in args._get_kwargs()}
 
@@ -119,6 +119,7 @@ def train(trainloader, model, criterion, optimizer, epoch, use_cuda):
             inputs, targets = inputs.cuda(), targets.cuda()
         inputs, targets = torch.autograd.Variable(inputs), torch.autograd.Variable(targets)
 
+
         outputs = model(inputs)
         loss = criterion(outputs, targets)
 
@@ -139,17 +140,16 @@ def train(trainloader, model, criterion, optimizer, epoch, use_cuda):
         end = time.time()
 
         # plot progress
-        bar.suffix = '({batch}/{size})|  Loss: {loss:.4f} | top1: {top1: .4f} | top5: {top5: .4f}'.format(
-            batch=batch_idx + 1,
-            size=len(trainloader),
-            loss=losses.avg,
-            top1=top1.avg,
-            top5=top5.avg,
-        )
+        bar.suffix  = '({batch}/{size})|  Loss: {loss:.4f} | top1: {top1: .4f} | top5: {top5: .4f}'.format(
+                    batch=batch_idx + 1,
+                    size=len(trainloader),
+                    loss=losses.avg,
+                    top1=top1.avg,
+                    top5=top5.avg,
+                    )
         bar.next()
     bar.finish()
     return (losses.avg, top1.avg)
-
 
 def test(testloader, model, criterion, epoch, use_cuda):
     global best_acc
@@ -188,47 +188,45 @@ def test(testloader, model, criterion, epoch, use_cuda):
         end = time.time()
 
         # plot progress
-        bar.suffix = '({batch}/{size})|  Loss: {loss:.4f} | top1: {top1: .4f} | top5: {top5: .4f}'.format(
-            batch=batch_idx + 1,
-            size=len(testloader),
-            loss=losses.avg,
-            top1=top1.avg,
-            top5=top5.avg,
-        )
+        bar.suffix  = '({batch}/{size})|  Loss: {loss:.4f} | top1: {top1: .4f} | top5: {top5: .4f}'.format(
+                    batch=batch_idx + 1,
+                    size=len(testloader),
+                    loss=losses.avg,
+                    top1=top1.avg,
+                    top5=top5.avg,
+                    )
         bar.next()
     bar.finish()
     return (losses.avg, top1.avg)
 
+def save_checkpoint(state, epoch,is_best, checkpoint='checkpoint', filename='checkpoint.pth.tar'):
 
-def save_checkpoint(state, epoch, is_best, checkpoint='checkpoint', filename='checkpoint.pth.tar'):
     print("***************************saving***************************")
     filepath = os.path.join(checkpoint, filename)
     torch.save(state, filepath)
     if is_best == 1:
         shutil.copyfile(filepath, os.path.join(checkpoint, 'model_best.pth.tar'))
+# def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=MixChannel, **kwargs):
+#     conversion_count = 0
+#     # print(type(torch.nn.modules.batchnorm.BatchNorm2d))
+#     for name, module in reversed(model._modules.items()):
 
+#         if len(list(module.children())) > 0:
+#             # recurse
+#             model._modules[name], num_converted = convert_layers(module, \
+#             layer_type_old, layer_type_new, **kwargs)
+#             conversion_count += num_converted
+#         # print('name:',name,' module:',module," 1 type:",nn.BatchNorm2d," 2 type",type(module),\
+#         # " change?:",type(module) == nn.BatchNorm2d)
+#         if type(module) == nn.BatchNorm2d:
 
-def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=MixChannel, **kwargs):
-    conversion_count = 0
-    # print(type(torch.nn.modules.batchnorm.BatchNorm2d))
-    for name, module in reversed(model._modules.items()):
+#             layer_old = module
+#             layer_new = layer_type_new(layer_old.num_features, **kwargs)
 
-        if len(list(module.children())) > 0:
-            # recurse
-            model._modules[name], num_converted = convert_layers(module, \
-                                                                 layer_type_old, layer_type_new, **kwargs)
-            conversion_count += num_converted
-        # print('name:',name,' module:',module," 1 type:",nn.BatchNorm2d," 2 type",type(module),\
-        # " change?:",type(module) == nn.BatchNorm2d)
-        if type(module) == nn.BatchNorm2d:
-            layer_old = module
-            layer_new = layer_type_new(layer_old.num_features, **kwargs)
+#             model._modules[name] = layer_new
+#             conversion_count += 1
 
-            model._modules[name] = layer_new
-            conversion_count += 1
-
-    return model, conversion_count
-
+#     return model, conversion_count
 
 def main():
     global best_acc
@@ -275,8 +273,7 @@ def main():
     else:
         model = models.__dict__[args.arch](num_classes=num_classes)
 
-    if args.NewBN:
-        convert_layers(model)
+
     print(model)
     model = torch.nn.DataParallel(model).cuda()
     cudnn.benchmark = True
@@ -286,7 +283,7 @@ def main():
     for name, params in model.module.named_parameters():
         # print("name:", name)
         model_param += [{'params': [params]}]
-    optimizer = optim.SGD(model_param, lr=args.lr * args.train_batch / 256, momentum=args.momentum, \
+    optimizer = optim.SGD(model_param, lr=args.lr*args.train_batch/256, momentum=args.momentum, \
                           weight_decay=args.weight_decay)
 
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
@@ -303,7 +300,7 @@ def main():
         model.load_state_dict(checkpoint['state_dict'])
         # adjust_learning_rate(optimizer, start_epoch)
         optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs, last_epoch=start_epoch - 1)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs,last_epoch=start_epoch-1)
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title, resume=True)
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
@@ -316,18 +313,19 @@ def main():
         return
 
     # Train and val
-    total_param = list(model.named_parameters())
+    total_param = list( model.named_parameters())
 
     for epoch in range(start_epoch, args.epochs):
+
         print('\nEpoch: [%d | %d] LR: %f' % (epoch + 1, args.epochs, optimizer.param_groups[0]['lr']))
 
         train_loss, train_acc = train(trainloader, model, criterion, optimizer, epoch,
                                       use_cuda)
         test_loss, test_acc = test(testloader, model, criterion, epoch, use_cuda)
 
-        # writer.add_scalar(name,params[0],epoch)
-        writer.add_scalars('acc', {"test acc": test_acc, "train acc": train_acc}, epoch)
-        writer.add_scalars('loss', {"test loss": test_loss, "train loss": train_loss}, epoch)
+                # writer.add_scalar(name,params[0],epoch)
+        writer.add_scalars('acc',{"test acc":test_acc,"train acc":train_acc},epoch)
+        writer.add_scalars('loss',{"test loss":test_loss,"train loss":train_loss},epoch)
 
         # append logger file
         logger.append([optimizer.param_groups[0]['lr'], train_loss, test_loss, train_acc, test_acc])
@@ -341,7 +339,7 @@ def main():
             'acc': test_acc,
             'best_acc': best_acc,
             'optimizer': optimizer.state_dict(),
-        }, epoch + 1, is_best, checkpoint=args.checkpoint)
+        }, epoch+1, is_best, checkpoint=args.checkpoint)
 
         scheduler.step()
         gc.collect()
@@ -352,7 +350,5 @@ def main():
 
     print('Best acc:')
     print(best_acc)
-
-
 if __name__ == '__main__':
     main()
