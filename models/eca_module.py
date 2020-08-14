@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn.parameter import Parameter
-
+import math
 class eca_layer(nn.Module):
     """Constructs a ECA module.
 
@@ -87,23 +87,23 @@ class NewBN_MeanOnly(nn.Module):
 class NewBN(nn.Module):
 
     def __init__(self, num_features, eps=1e-05, momentum=0.9, affine=True):
-        super(NewBNy, self).__init__()
+        super(NewBN, self).__init__()
 
-        t = int(num_features / 8)
-        ks = t if t % 2 else t + 1
+        t = int(abs((math.log(num_features, 2) + 1) / 2))
+        k_size = t if t % 2 else t + 1
 
-        self.linearvar = nn.Conv1d(1, 1, kernel_size=ks, padding=(ks - 1) // 2, bias=False)
-        self.linearmean = nn.Conv1d(1, 1, kernel_size=ks, padding=(ks - 1) // 2, bias=False)
+        self.linearvar = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        self.linearmean = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
 
         self.sigmoid = nn.Sigmoid()
         self.bn = nn.BatchNorm2d(num_features)
 
     def forward(self, x):
-        n = x.numel() / (x.size(1))
+        n = x.numel() / (x.size(0))
         if self.training:
 
-            mean = x.mean(dim=(0, 2, 3))
-            var = (x-mean[None, :, None, None]).pow(2).mean(dim=(0,2, 3))
+            mean = x.mean(dim=(0, 2, 3)).detach()
+            var = (x-mean[None, :, None, None]).pow(2).mean(dim=(0,2, 3)).detach()
 
             indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
             indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)

@@ -5,7 +5,8 @@ import random
 import shutil
 import time
 import warnings
-
+import torch.utils.data as data
+from  models.eca_module import *
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -17,7 +18,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import models
-
+import torch.optim as optim
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
@@ -25,11 +26,6 @@ model_names = sorted(name for name in models.__dict__
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
-parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet18',
-                    choices=model_names,
-                    help='model architecture: ' +
-                        ' | '.join(model_names) +
-                        ' (default: resnet18)')
 parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 parser.add_argument('--epochs', default=100, type=int, metavar='N',
@@ -67,8 +63,18 @@ parser.add_argument('--ksize', default=None, type=list,
 parser.add_argument('--action', default='', type=str,
                     help='other information.')
 parser.add_argument('-d', '--dataset', default='cifar10', type=str)
-
-parser.add_argument('-NewBN',dest="NewBN",default=False,type=bool)
+parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metavar='PATH',
+                    help='path to save checkpoint (default: checkpoint)')
+parser.add_argument('--NewBN',dest="NewBN",action='store_true')
+parser.add_argument('--arch', '-a', metavar='ARCH', default='resnet20',
+                    choices=model_names,
+                    help='model architecture: ' +
+                        ' | '.join(model_names) +
+                        ' (default: resnet18)')
+parser.add_argument('--train_batch', default=32, type=int, metavar='N',
+                    help='train batchsize')
+parser.add_argument('--test_batch', default=32, type=int, metavar='N',
+                    help='test batchsize')
 best_prec1 = 0
 def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=NewBN, **kwargs):
     conversion_count = 0
@@ -127,19 +133,13 @@ def main():
         dataloader = datasets.CIFAR100
         num_classes = 100
 
-    if args.arch.endswith('resnet'):
-        model = models.__dict__[args.arch](
-            num_classes=num_classes,
-            depth=args.depth,
-            block_name=args.block_name,
-        )
-    else:
-        model = models.__dict__[args.arch](num_classes=num_classes)
 
-    model = torch.nn.DataParallel(model).cuda()
-    cudnn.benchmark = True
+    model = models.__dict__[args.arch](num_classes=num_classes)
     if args.NewBN:
         convert_layers(model)
+    model = torch.nn.DataParallel(model).cuda()
+    cudnn.benchmark = True
+
     print(model)
     
     # get the number of models parameters
@@ -152,7 +152,7 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
     # optionally resume from a checkpoint
     if args.resume:
         if os.path.isfile(args.resume):
@@ -215,7 +215,7 @@ def main():
     for epoch in range(args.start_epoch, args.epochs):
         start_time = time.time()
 
-        # adjust_learning_rate(optimizer, epoch)
+        adjust_learning_rate(optimizer, epoch)
 
         # train for one epoch
         # train(train_loader, model, criterion, optimizer, epoch)
@@ -253,7 +253,7 @@ def main():
         print("-" * 80)
         print(time_value)
         print("-" * 80)
-        scheduler.step()
+        # scheduler.step()
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
