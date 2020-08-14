@@ -1,4 +1,3 @@
-
 '''
 Training script for CIFAR-10/100
 Copyright (c) Wei YANG, 2017
@@ -22,9 +21,9 @@ import torchvision.datasets as datasets
 import models as models
 from progress.bar import Bar
 from utils import Logger, AverageMeter, accuracy, mkdir_p, savefig
-from models.layers import *
 
-import gc
+from models.eca_module import *
+import gc 
 
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
@@ -36,7 +35,7 @@ parser.add_argument('-d', '--dataset', default='cifar10', type=str)
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 # Optimization options
-parser.add_argument('--epochs', default=300, type=int, metavar='N',
+parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--train_batch', default=32, type=int, metavar='N',
                     help='train batchsize')
@@ -75,7 +74,8 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
 #Device options
 parser.add_argument('--gpu_id', default='0', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
-
+parser.add_argument('--NewBN', dest='NewBN', action='store_true',
+                    help='use NewBN')
 args = parser.parse_args()
 state = {k: v for k, v in args._get_kwargs()}
 
@@ -200,38 +200,38 @@ def test(testloader, model, criterion, epoch, use_cuda):
     return (losses.avg, top1.avg)
 
 def save_checkpoint(state, epoch,is_best, checkpoint='checkpoint', filename='checkpoint.pth.tar'):
-
+    
     print("***************************saving***************************")
     filepath = os.path.join(checkpoint, filename)
     torch.save(state, filepath)
     if is_best == 1:
         shutil.copyfile(filepath, os.path.join(checkpoint, 'model_best.pth.tar'))
-# def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=MixChannel, **kwargs):
-#     conversion_count = 0
-#     # print(type(torch.nn.modules.batchnorm.BatchNorm2d))
-#     for name, module in reversed(model._modules.items()):
+def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=NewBN, **kwargs):
+    conversion_count = 0
+    # print(type(torch.nn.modules.batchnorm.BatchNorm2d))
+    for name, module in reversed(model._modules.items()):
 
-#         if len(list(module.children())) > 0:
-#             # recurse
-#             model._modules[name], num_converted = convert_layers(module, \
-#             layer_type_old, layer_type_new, **kwargs)
-#             conversion_count += num_converted
-#         # print('name:',name,' module:',module," 1 type:",nn.BatchNorm2d," 2 type",type(module),\
-#         # " change?:",type(module) == nn.BatchNorm2d)
-#         if type(module) == nn.BatchNorm2d:
+        if len(list(module.children())) > 0:
+            # recurse
+            model._modules[name], num_converted = convert_layers(module, \
+            layer_type_old, layer_type_new, **kwargs)
+            conversion_count += num_converted
+        # print('name:',name,' module:',module," 1 type:",nn.BatchNorm2d," 2 type",type(module),\
+        # " change?:",type(module) == nn.BatchNorm2d)
+        if type(module) == nn.BatchNorm2d:
 
-#             layer_old = module
-#             layer_new = layer_type_new(layer_old.num_features, **kwargs)
+            layer_old = module
+            layer_new = layer_type_new(layer_old.num_features, **kwargs)
 
-#             model._modules[name] = layer_new
-#             conversion_count += 1
+            model._modules[name] = layer_new
+            conversion_count += 1
 
-#     return model, conversion_count
+    return model, conversion_count
 
 def main():
     global best_acc
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
-
+    
     if not os.path.isdir(args.checkpoint):
         mkdir_p(args.checkpoint)
     # print("args:",args)
@@ -273,7 +273,8 @@ def main():
     else:
         model = models.__dict__[args.arch](num_classes=num_classes)
 
-
+    if args.NewBN:
+        convert_layers(model)
     print(model)
     model = torch.nn.DataParallel(model).cuda()
     cudnn.benchmark = True
