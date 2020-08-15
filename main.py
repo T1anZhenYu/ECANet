@@ -66,7 +66,8 @@ parser.add_argument('--ksize', default=None, type=list,
                     help='Manually select the eca module kernel size')
 parser.add_argument('--action', default='', type=str,
                     help='other information.')
-                    
+parser.add_argument('--NewBN_tpye', dest='NewBNtype', type=int,default=1,
+                    help='0:No NewBN;1:both mean and var; 2:mean only; 3: var only')            
 
 best_prec1 = 0
 
@@ -106,6 +107,13 @@ def main():
         else:
             model = models.__dict__[args.arch](k_size=args.ksize)
 
+    if args.NewBNtype == 1:
+        convert_layers(model,layer_type_new=NewBN)
+    elif args.NewBNtype == 2:
+        convert_layers(model,layer_type_new=NewBN1)
+    elif args.NewBNtype == 3:
+        convert_layers(model,layer_type_new=NewBN2)
+        
     if args.gpu is not None:
         model = model.cuda(args.gpu)
     elif args.distributed:

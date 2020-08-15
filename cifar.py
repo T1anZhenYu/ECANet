@@ -273,11 +273,11 @@ def main():
     else:
         model = models.__dict__[args.arch](num_classes=num_classes)
 
-    if args.NewBN == 1:
+    if args.NewBNtype == 1:
         convert_layers(model,layer_type_new=NewBN)
-    elif args.NewBN == 2:
+    elif args.NewBNtype == 2:
         convert_layers(model,layer_type_new=NewBN1)
-    elif args.NewBN == 3:
+    elif args.NewBNtype == 3:
         convert_layers(model,layer_type_new=NewBN2)
     print(model)
     model = torch.nn.DataParallel(model).cuda()

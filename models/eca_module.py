@@ -143,7 +143,7 @@ class NewBN1(nn.Module):
         t = int(abs((math.log(num_features, 2) + 1) / 2))
         k_size = t if t % 2 else t + 1
 
-        self.linearvar = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        # self.linearvar = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
         self.linearmean = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
 
         self.sigmoid = nn.Sigmoid()
@@ -195,7 +195,7 @@ class NewBN2(nn.Module):
         k_size = t if t % 2 else t + 1
 
         self.linearvar = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
-        self.linearmean = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        # self.linearmean = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
 
         self.sigmoid = nn.Sigmoid()
         self.bn = nn.BatchNorm2d(num_features)
