@@ -66,9 +66,12 @@ parser.add_argument('--ksize', default=None, type=list,
                     help='Manually select the eca module kernel size')
 parser.add_argument('--action', default='', type=str,
                     help='other information.')
+# change NewBN type
 parser.add_argument('--NewBN_tpye', dest='NewBNtype', type=int,default=1,
-                    help='0:No NewBN;1:both mean and var; 2:mean only; 3: var only')            
-
+                    help='0:No NewBN;1:both mean and var; 2:mean only; 3: var only')  
+# change checkpoint path          
+parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metavar='PATH',
+                    help='path to save checkpoint (default: checkpoint)')
 best_prec1 = 0
 
 def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=NewBN, **kwargs):
@@ -219,7 +222,7 @@ def main():
         print((n-m)/3600)
         return
     
-    directory = "runs/%s/"%(args.arch + '_' + args.action)
+    directory = args.checkpoint
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -257,7 +260,7 @@ def main():
             'state_dict': model.state_dict(),
             'best_prec1': best_prec1,
             'optimizer' : optimizer.state_dict(),
-        }, is_best)
+        }, is_best,directory)
         
         # 将Loss,train_prec1,train_prec5,val_prec1,val_prec5用.txt的文件存起来
         data_save(directory + 'Loss_plot.txt', Loss_plot)
@@ -370,8 +373,7 @@ def validate(val_loader, model, criterion):
     return top1.avg, top5.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    directory = "runs/%s/"%(args.arch + '_' + args.action)
+def save_checkpoint(state, is_best,directory, filename='checkpoint.pth.tar'):
     
     filename = directory + filename
     torch.save(state, filename)
