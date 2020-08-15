@@ -105,13 +105,13 @@ class NewBN(nn.Module):
             mean = x.mean(dim=(0, 2, 3)).detach()
             var = (x-mean[None, :, None, None]).pow(2).mean(dim=(0,2, 3)).detach()
 
-            indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
-            indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
+            # indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
+            # indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
 
-            meanmix = indexmean * mean
+            meanmix = mean
             meanmix = self.sigmoid(self.linearmean(meanmix[None, None, :]).squeeze())
 
-            varmix = indexvar * torch.sqrt(var)
+            varmix = torch.sqrt(var)
             varmix = self.sigmoid(self.linearvar(varmix[None,None,:]).squeeze())
 
             index = meanmix*0.5 + varmix*0.5
@@ -120,13 +120,13 @@ class NewBN(nn.Module):
             mean = self.bn.running_mean
             var = self.bn.running_var
 
-            indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
-            indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
+            # indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
+            # indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
 
-            meanmix = indexmean * mean
+            meanmix = mean
             meanmix = self.sigmoid(self.linearmean(meanmix[None, None, :]).squeeze())
 
-            varmix = indexvar * torch.sqrt(var)
+            varmix = torch.sqrt(var)
             varmix = self.sigmoid(self.linearvar(varmix[None,None,:]).squeeze())
 
             index = meanmix*0.5 + varmix*0.5
@@ -134,4 +134,105 @@ class NewBN(nn.Module):
         out = self.bn(x)
         out.mul_(index[None, :, None, None])
         return out
-        
+
+class NewBN1(nn.Module):
+
+    def __init__(self, num_features, eps=1e-05, momentum=0.9, affine=True):
+        super(NewBN1, self).__init__()
+
+        t = int(abs((math.log(num_features, 2) + 1) / 2))
+        k_size = t if t % 2 else t + 1
+
+        self.linearvar = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        self.linearmean = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+
+        self.sigmoid = nn.Sigmoid()
+        self.bn = nn.BatchNorm2d(num_features)
+
+    def forward(self, x):
+        n = x.numel() / (x.size(0))
+        if self.training:
+
+            mean = x.mean(dim=(0, 2, 3)).detach()
+            # var = (x-mean[None, :, None, None]).pow(2).mean(dim=(0,2, 3)).detach()
+
+            # indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
+            # indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
+
+            meanmix = mean
+            meanmix = self.sigmoid(self.linearmean(meanmix[None, None, :]).squeeze())
+
+            # varmix = indexvar * torch.sqrt(var)
+            # varmix = self.sigmoid(self.linearvar(varmix[None,None,:]).squeeze())
+
+            index = meanmix
+
+        else:
+            mean = self.bn.running_mean
+            # var = self.bn.running_var
+
+            # indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
+            # indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
+
+            meanmix =  mean
+            meanmix = self.sigmoid(self.linearmean(meanmix[None, None, :]).squeeze())
+
+            # varmix = indexvar * torch.sqrt(var)
+            # varmix = self.sigmoid(self.linearvar(varmix[None,None,:]).squeeze())
+
+            index = meanmix
+
+        out = self.bn(x)
+        out.mul_(index[None, :, None, None])
+        return out
+
+class NewBN2(nn.Module):
+
+    def __init__(self, num_features, eps=1e-05, momentum=0.9, affine=True):
+        super(NewBN2, self).__init__()
+
+        t = int(abs((math.log(num_features, 2) + 1) / 2))
+        k_size = t if t % 2 else t + 1
+
+        self.linearvar = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        self.linearmean = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+
+        self.sigmoid = nn.Sigmoid()
+        self.bn = nn.BatchNorm2d(num_features)
+
+    def forward(self, x):
+        n = x.numel() / (x.size(0))
+        if self.training:
+
+            mean = x.mean(dim=(0, 2, 3)).detach()
+            var = (x-mean[None, :, None, None]).pow(2).mean(dim=(0,2, 3)).detach()
+
+            # indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
+            # indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
+
+            # meanmix = indexmean * mean
+            # meanmix = self.sigmoid(self.linearmean(meanmix[None, None, :]).squeeze())
+
+            varmix = torch.sqrt(var)
+            varmix = self.sigmoid(self.linearvar(varmix[None,None,:]).squeeze())
+
+            index = varmix
+
+        else:
+            # mean = self.bn.running_mean
+            var = self.bn.running_var
+
+            # indexvar = torch.sqrt(self.bn.running_var).mean()/math.pow(n,0.5)
+            # indexmean = self.bn.running_mean.mean() / math.pow(n, 0.5)
+
+            # meanmix = indexmean * mean
+            # meanmix = self.sigmoid(self.linearmean(meanmix[None, None, :]).squeeze())
+
+            varmix =  torch.sqrt(var)
+            varmix = self.sigmoid(self.linearvar(varmix[None,None,:]).squeeze())
+
+            index = varmix
+
+        out = self.bn(x)
+        out.mul_(index[None, :, None, None])
+        return out

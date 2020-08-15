@@ -74,8 +74,8 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
 #Device options
 parser.add_argument('--gpu_id', default='0', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
-parser.add_argument('--NewBN', dest='NewBN', action='store_true',
-                    help='use NewBN')
+parser.add_argument('--NewBN_tpye', dest='NewBNtype', type=int,default=1,
+                    help='0:No NewBN;1:both mean and var; 2:mean only; 3: var only')
 args = parser.parse_args()
 state = {k: v for k, v in args._get_kwargs()}
 
@@ -273,8 +273,12 @@ def main():
     else:
         model = models.__dict__[args.arch](num_classes=num_classes)
 
-    if args.NewBN:
-        convert_layers(model)
+    if args.NewBN == 1:
+        convert_layers(model,layer_type_new=NewBN)
+    elif args.NewBN == 2:
+        convert_layers(model,layer_type_new=NewBN1)
+    elif args.NewBN == 3:
+        convert_layers(model,layer_type_new=NewBN2)
     print(model)
     model = torch.nn.DataParallel(model).cuda()
     cudnn.benchmark = True
