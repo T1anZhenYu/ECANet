@@ -137,7 +137,8 @@ def main():
         convert_layers(model,layer_type_new=NewBN1)
     elif args.NewBNtype == 3:
         convert_layers(model,layer_type_new=NewBN2)
-        
+    elif args.NewBNtype == 4:
+        convert_layers(model,layer_type_new=NewBN3)
     if args.gpu is not None:
         model = model.cuda(args.gpu)
     elif args.distributed:

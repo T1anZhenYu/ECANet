@@ -182,3 +182,35 @@ class NewBN2(nn.Module):
         out = self.bn(x)
         out.mul_(index[None, :, None, None])
         return out
+
+class NewBN3(nn.Module):
+
+    def __init__(self, num_features, eps=1e-05, momentum=0.9, affine=True):
+        super(NewBN3, self).__init__()
+
+        t = int(abs((math.log(num_features, 2) + 1) / 2))
+        k_size = t if t % 2 else t + 1
+
+        self.linearvar = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+        self.linearmean = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
+
+        self.sigmoid = nn.Sigmoid()
+        self.bn = nn.BatchNorm2d(num_features)
+
+    def forward(self, x):
+        n = x.numel() / (x.size(0))
+
+        mean = self.bn.running_mean
+        var = self.bn.running_var
+
+        meanmix = mean
+        meanmix = self.sigmoid(self.linearmean(meanmix[None, None, :]).squeeze())
+
+        varmix = torch.sqrt(var)
+        varmix = self.sigmoid(self.linearvar(varmix[None,None,:]).squeeze())
+
+        index = meanmix*0.5 + varmix*0.5
+
+        out = self.bn(x)
+        out.mul_(index[None, :, None, None])
+        return out
