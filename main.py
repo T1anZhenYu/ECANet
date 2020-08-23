@@ -141,6 +141,10 @@ def main():
         convert_layers(model,layer_type_new=NewBN3)
     elif args.NewBNtype == 5:
         convert_layers(model, layer_type_new=NewBN4)
+    elif args.NewBNtype == 6:
+        convert_layers(model, layer_type_new=NewBN5)
+    elif args.NewBNtype == 7:
+        convert_layers(model, layer_type_new=NewBN6)
     if args.gpu is not None:
         model = model.cuda(args.gpu)
     elif args.distributed:
