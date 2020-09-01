@@ -221,7 +221,7 @@ def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=NewBN, *
         if type(module) == layer_type_old:
 
             layer_old = module
-            layer_new = layer_type_new(layer_old.num_features, **kwargs)
+            layer_new = layer_type_new(layer_old.num_features,**kwargs)
 
             model._modules[name] = layer_new
             conversion_count += 1

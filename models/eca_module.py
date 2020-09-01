@@ -6,13 +6,13 @@ class eca_layer(nn.Module):
     """Constructs a ECA module.
 
     Args:
-        channel: Number of channels of the input feature map
+        num_features: Number of num_featuress of the input feature map
         k_size: Adaptive selection of kernel size
     """
-    def __init__(self, channel, k_size=3):
+    def __init__(self, num_features, k_size=3):
         super(eca_layer, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        t = int(abs((math.log(channel, 2) + 1) / 2))
+        t = int(abs((math.log(num_features, 2) + 1) / 2))
         k_size = t if t % 2 else t + 1
         self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False) 
         self.sigmoid = nn.Sigmoid()
@@ -36,14 +36,14 @@ class eca_layer_batchwise(nn.Module):
     """Constructs a ECA module.
 
     Args:
-        channel: Number of channels of the input feature map
+        num_features: Number of num_featuress of the input feature map
         k_size: Adaptive selection of kernel size
     """
-    def __init__(self, channel, k_size=3,momentum=0.9):
+    def __init__(self, num_features, k_size=3,momentum=0.9):
         super(eca_layer_batchwise, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.register_buffer('running_mean', torch.zeros(channel))
-        t = int(abs((math.log(channel, 2) + 1) / 2))
+        self.register_buffer('running_mean', torch.zeros(num_features))
+        t = int(abs((math.log(num_features, 2) + 1) / 2))
         k_size = t if t % 2 else t + 1
         self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
         self.sigmoid = nn.Sigmoid()
