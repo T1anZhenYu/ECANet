@@ -53,10 +53,10 @@ class eca_layer_batchwise(nn.Module):
         # x: input features with shape [b, c, h, w]
         b, c, h, w = x.size()
         if self.training:
-            mean = x.mean(dim=(0, 2, 3))
+            mean = x.mean(dim=(0, 2, 3)).detach()
             # feature descriptor on the global spatial information
             # y = self.avg_pool(x)
-            self.running_mean = self.momentum * self.running_mean + (1-self.momentum) * mean.squeeze()
+            self.running_mean = self.momentum * self.running_mean + (1-self.momentum) * mean
             # Two different branches of ECA module
             y = self.conv(mean[None,None,:]).transpose(-1, -2).unsqueeze(-1)
         else:
