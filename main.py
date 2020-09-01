@@ -131,20 +131,7 @@ def main():
         else:
             model = models.__dict__[args.arch](k_size=args.ksize)
 
-    if args.NewBNtype == 1:
-        convert_layers(model,layer_type_new=NewBN)
-    elif args.NewBNtype == 2:
-        convert_layers(model,layer_type_new=NewBN1)
-    elif args.NewBNtype == 3:
-        convert_layers(model,layer_type_new=NewBN2)
-    elif args.NewBNtype == 4:
-        convert_layers(model,layer_type_new=NewBN3)
-    elif args.NewBNtype == 5:
-        convert_layers(model, layer_type_new=NewBN4)
-    elif args.NewBNtype == 6:
-        convert_layers(model, layer_type_new=NewBN5)
-    elif args.NewBNtype == 7:
-        convert_layers(model, layer_type_new=NewBN6)
+
     if args.gpu is not None:
         model = model.cuda(args.gpu)
     elif args.distributed:

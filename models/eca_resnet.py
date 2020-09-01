@@ -1,7 +1,7 @@
 import torch.nn as nn
 import math
 # import torch.utils.model_zoo as model_zoo
-from .eca_module import eca_layer
+from .eca_module import *
 
 
 def conv3x3(in_planes, out_planes, stride=1):

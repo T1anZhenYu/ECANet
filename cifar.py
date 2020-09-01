@@ -275,10 +275,8 @@ def main():
 
     if args.NewBNtype == 1:
         convert_layers(model,layer_type_new=NewBN)
-    elif args.NewBNtype == 2:
-        convert_layers(model,layer_type_new=NewBN1)
-    elif args.NewBNtype == 3:
-        convert_layers(model,layer_type_new=NewBN2)
+    if args.NewBNtype == 2:
+        convert_layers(model,layer_type_old=eca_layer,layer_type_new=eca_layer_batchwise)
     print(model)
     model = torch.nn.DataParallel(model).cuda()
     cudnn.benchmark = True
