@@ -65,7 +65,7 @@ class eca_layer_batchwise(nn.Module):
         # Multi-scale information fusion
         y = self.sigmoid(y)
 
-        return x * y.expand_as(x)
+        return x * y[None,:,None,None]
 
 
 class NewBN(nn.Module):
