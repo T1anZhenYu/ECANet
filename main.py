@@ -146,7 +146,12 @@ def main():
             model = torch.nn.DataParallel(model).cuda()
 
     print(model)
-    
+
+    if args.NewBNtype == 1:
+        convert_layers(model,layer_type_new=NewBN)
+    if args.NewBNtype == 2:
+        convert_layers(model,layer_type_old=eca_layer,layer_type_new=eca_layer_batchwise)
+        
     # get the number of models parameters
     print('Number of models parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()])))

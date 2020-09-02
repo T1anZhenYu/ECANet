@@ -21,8 +21,8 @@ import torchvision.datasets as datasets
 import models as models
 from progress.bar import Bar
 from utils import Logger, AverageMeter, accuracy, mkdir_p, savefig
-
 from models.eca_module import *
+
 import gc 
 
 model_names = sorted(name for name in models.__dict__
@@ -35,7 +35,7 @@ parser.add_argument('-d', '--dataset', default='cifar10', type=str)
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
 # Optimization options
-parser.add_argument('--epochs', default=100, type=int, metavar='N',
+parser.add_argument('--epochs', default=300, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--train_batch', default=32, type=int, metavar='N',
                     help='train batchsize')
@@ -75,7 +75,7 @@ parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
 parser.add_argument('--gpu_id', default='0', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
 parser.add_argument('--NewBN_tpye', dest='NewBNtype', type=int,default=1,
-                    help='0:No NewBN;1:both mean and var; 2:mean only; 3: var only')
+                    help='0:BN;')  
 args = parser.parse_args()
 state = {k: v for k, v in args._get_kwargs()}
 
@@ -221,7 +221,7 @@ def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=NewBN, *
         if type(module) == layer_type_old:
 
             layer_old = module
-            layer_new = layer_type_new(layer_old.num_features,**kwargs)
+            layer_new = layer_type_new(layer_old.num_features, **kwargs)
 
             model._modules[name] = layer_new
             conversion_count += 1
@@ -273,10 +273,12 @@ def main():
     else:
         model = models.__dict__[args.arch](num_classes=num_classes)
 
+
     if args.NewBNtype == 1:
         convert_layers(model,layer_type_new=NewBN)
     if args.NewBNtype == 2:
         convert_layers(model,layer_type_old=eca_layer,layer_type_new=eca_layer_batchwise)
+
     print(model)
     model = torch.nn.DataParallel(model).cuda()
     cudnn.benchmark = True
