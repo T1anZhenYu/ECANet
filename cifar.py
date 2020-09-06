@@ -227,7 +227,11 @@ def convert_layers(model, layer_type_old=nn.BatchNorm2d, layer_type_new=NewBN, *
             conversion_count += 1
 
     return model, conversion_count
-
+def adjust_learning_rate(optimizer, epoch):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lr = args.lr * (0.1 ** (epoch // 30))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 def main():
     global best_acc
     start_epoch = 0  # start from epoch 0 or last checkpoint epoch
@@ -298,10 +302,11 @@ def main():
     for name, params in model.module.named_parameters():
         # print("name:", name)
         model_param += [{'params': [params]}]
-    optimizer = optim.SGD(model_param, lr=args.lr*args.train_batch/256, momentum=args.momentum, \
+    # optimizer = optim.SGD(model_param, lr=args.lr*args.train_batch/256, momentum=args.momentum, \
+    #                       weight_decay=args.weight_decay)
+    optimizer = optim.SGD(model_param, lr=args.lr, momentum=args.momentum, \
                           weight_decay=args.weight_decay)
-
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
     # Resume
     title = 'cifar-10-' + args.arch
     if args.resume:
@@ -315,7 +320,7 @@ def main():
         model.load_state_dict(checkpoint['state_dict'])
         # adjust_learning_rate(optimizer, start_epoch)
         optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs,last_epoch=start_epoch-1)
+        # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs,last_epoch=start_epoch-1)
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title, resume=True)
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
@@ -331,7 +336,7 @@ def main():
     total_param = list( model.named_parameters())
 
     for epoch in range(start_epoch, args.epochs):
-
+        
         print('\nEpoch: [%d | %d] LR: %f' % (epoch + 1, args.epochs, optimizer.param_groups[0]['lr']))
 
         train_loss, train_acc = train(trainloader, model, criterion, optimizer, epoch,
@@ -355,8 +360,8 @@ def main():
             'best_acc': best_acc,
             'optimizer': optimizer.state_dict(),
         }, epoch+1, is_best, checkpoint=args.checkpoint)
-
-        scheduler.step()
+        adjust_learning_rate(optimizer, epoch)
+        # scheduler.step()
         gc.collect()
         torch.cuda.empty_cache()
     logger.close()
