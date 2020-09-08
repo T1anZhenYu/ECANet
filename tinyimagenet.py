@@ -24,7 +24,7 @@ from utils import Logger, AverageMeter, accuracy, mkdir_p, savefig
 from models.eca_module import *
 import numpy as np
 import gc 
-
+import cv2
 model_names = sorted(name for name in models.__dict__
     if not name.startswith("__")
     and callable(models.__dict__[name]))
@@ -77,11 +77,12 @@ parser.add_argument('--gpu_id', default='0', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
 parser.add_argument('--NewBN_tpye', dest='NewBNtype', type=int,default=1,
                     help='0:BN;')  
+
 args = parser.parse_args()
 state = {k: v for k, v in args._get_kwargs()}
 
 # Validate dataset
-assert args.dataset == 'cifar10' or args.dataset == 'cifar100', 'Dataset can only be cifar10 or cifar100.'
+# assert args.dataset == 'cifar10' or args.dataset == 'cifar100', 'Dataset can only be cifar10 or cifar100.'
 
 # Use CUDA
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_id
@@ -105,27 +106,28 @@ val_labels_t = []
 val_labels = []
 val_names = []
 image_name = []
-class tinyImagenetdata(Dataset):
+class tinyImagenetdata(data.Dataset):
     def __init__(self, type, transform):
         self.type = type
         if type == 'train':
             i = 0
-            self.images = []
+            self.images = np.zeros((500*200,64,64,3))
             for label in labels_t:
+                
                 image = []
                 for image_name in image_names[i]:
-                    image_path = os.path.join('.\\tiny-imagenet-200\\train', label, 'images', image_name)
-                    image.append(cv2.imread(image_path))
-                self.images.append(image)
+                    image_path = os.path.join('/content/tiny-imagenet-200/train/', label, 'images', image_name)
+                    self.images[i]=cv2.imread(image_path)
+                
                 i = i + 1
-            self.images = np.array(self.images)
-            self.images = self.images.reshape(-1, 64, 64, 3)
+
         elif type == 'val':
-            self.val_images = []
+            self.val_images = np.zeros((10000,64,64,3))
+            i= 0
             for val_image in val_names:
-                val_image_path = os.path.join('.\\tiny-imagenet-200\\val\\images', val_image)
-                self.val_images.append(cv2.imread(val_image_path))
-            self.val_images = np.array(self.val_images)
+                val_image_path = os.path.join('/content/tiny-imagenet-200/val/images', val_image)
+                self.val_images[i]=cv2.imread(val_image_path)
+                i = i + 1
         self.transform = transform
 
     def __getitem__(self, index):
@@ -150,11 +152,11 @@ class tinyImagenetdata(Dataset):
 
 def handle_tiny_imagenet():
 
-    with open('.\\tiny-imagenet-200\\wnids.txt') as wnid:
+    with open('/content/tiny-imagenet-200/wnids.txt') as wnid:
         for line in wnid:
             labels_t.append(line.strip('\n'))
     for label in labels_t:
-        txt_path = '.\\tiny-imagenet-200\\train\\'+label+'\\'+label+'_boxes.txt'
+        txt_path = '/content/tiny-imagenet-200/train/'+label+'/'+label+'_boxes.txt'
 
         with open(txt_path) as txt:
             for line in txt:
@@ -162,7 +164,7 @@ def handle_tiny_imagenet():
         image_names.append(image_name)
     labels = np.arange(200)
 
-    with open('.\\tiny-imagenet-200\\val\\val_annotations.txt') as txt:
+    with open('/content/tiny-imagenet-200/val/val_annotations.txt') as txt:
         for line in txt:
             val_names.append(line.strip('\n').split('\t')[0])
             val_labels_t.append(line.strip('\n').split('\t')[1])
@@ -357,8 +359,8 @@ def main():
         handle_tiny_imagenet()
         trainset = tinyImagenetdata('train', transform=transforms.Compose([transforms.ToTensor()]))
         testset = tinyImagenetdata('val', transform=transforms.Compose([transforms.ToTensor()]))
-        trainloader = DataLoader(trainset, batch_size=args.train_batch, shuffle=True, num_workers=args.workers)
-        testloader = DataLoader(testset, batch_size=args.test_batch, shuffle=False, num_workers=args.workers)
+        trainloader = data.DataLoader(trainset, batch_size=args.train_batch, shuffle=True, num_workers=args.workers)
+        testloader = data.DataLoader(testset, batch_size=args.test_batch, shuffle=False, num_workers=args.workers)
 
     # Model
     print("==> creating model '{}'".format(args.arch))
