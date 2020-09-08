@@ -340,6 +340,8 @@ def main():
             transforms.ToTensor(),
             normalize,
         ])
+
+
     if args.dataset == 'cifar10':
         dataloader = datasets.CIFAR10
         num_classes = 10
@@ -356,11 +358,36 @@ def main():
         testloader = data.DataLoader(testset, batch_size=args.test_batch, shuffle=False, num_workers=args.workers)
     elif args.dataset == 'tinyImagenet':
         num_classes = 200
-        handle_tiny_imagenet()
-        trainset = tinyImagenetdata('train', transform=transforms.Compose([transforms.ToTensor()]))
-        testset = tinyImagenetdata('val', transform=transforms.Compose([transforms.ToTensor()]))
-        trainloader = data.DataLoader(trainset, batch_size=args.train_batch, shuffle=True, num_workers=args.workers)
-        testloader = data.DataLoader(testset, batch_size=args.test_batch, shuffle=False, num_workers=args.workers)
+    # Data loading code
+        traindir = os.path.join(args.datasetpath, 'train')
+        valdir = os.path.join(args.datasetpath, 'val')
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                        std=[0.229, 0.224, 0.225])
+
+        train_dataset = datasets.ImageFolder(
+            traindir,
+            transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ]))
+
+        train_sampler = None
+
+        trainloader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=args.train_batch, shuffle=(train_sampler is None),
+            num_workers=args.workers, pin_memory=True, sampler=train_sampler)
+
+        testloader = torch.utils.data.DataLoader(
+            datasets.ImageFolder(valdir, transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                normalize,
+            ])),
+            batch_size=args.train_batch, shuffle=False,
+            num_workers=args.workers, pin_memory=True)
 
     # Model
     print("==> creating model '{}'".format(args.arch))
@@ -388,11 +415,11 @@ def main():
     for name, params in model.module.named_parameters():
         # print("name:", name)
         model_param += [{'params': [params]}]
-    # optimizer = optim.SGD(model_param, lr=args.lr*args.train_batch/256, momentum=args.momentum, \
-    #                       weight_decay=args.weight_decay)
-    optimizer = optim.SGD(model_param, lr=args.lr, momentum=args.momentum, \
+    optimizer = optim.SGD(model_param, lr=args.lr*args.train_batch/256, momentum=args.momentum, \
                           weight_decay=args.weight_decay)
-    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
+    # optimizer = optim.SGD(model_param, lr=args.lr, momentum=args.momentum, \
+    #                       weight_decay=args.weight_decay)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
     # Resume
     title = 'cifar-10-' + args.arch
     if args.resume:
@@ -446,8 +473,8 @@ def main():
             'best_acc': best_acc,
             'optimizer': optimizer.state_dict(),
         }, epoch+1, is_best, checkpoint=args.checkpoint)
-        adjust_learning_rate(optimizer, epoch)
-        # scheduler.step()
+        # adjust_learning_rate(optimizer, epoch)
+        scheduler.step()
         gc.collect()
         torch.cuda.empty_cache()
     logger.close()
