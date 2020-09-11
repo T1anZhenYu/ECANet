@@ -433,7 +433,7 @@ def main():
         model.load_state_dict(checkpoint['state_dict'])
         # adjust_learning_rate(optimizer, start_epoch)
         optimizer.load_state_dict(checkpoint['optimizer'])
-        # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs,last_epoch=start_epoch-1)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs,last_epoch=start_epoch-1)
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title, resume=True)
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'), title=title)
